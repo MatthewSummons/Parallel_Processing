@@ -1,22 +1,22 @@
 package TwentyFourGame.Server;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class AuthenticationManager extends UnicastRemoteObject implements Authenticate {
     private static final String USER_INFO_FILE = "TwentyFourGame/Server/UserInfo.txt";
     private static final String ONLINE_USER_FILE = "TwentyFourGame/Server/OnlineUser.txt";
+
+    private int rankCounter = 0;
 
     private ReadWriteLock userInfoLock;
     private ReadWriteLock onlineUserLock;
@@ -84,13 +84,54 @@ public class AuthenticationManager extends UnicastRemoteObject implements Authen
         }
     }
 
-    // FIXME: Implement getUserData
     @Override
     public UserData getUserData(String username) throws RemoteException {
-        return new UserData(
-            username, 12, 25, 23.4, 1
-        );
-    }    
+        try {
+            String[] userInfo = readUserInfo(username);
+            if (userInfo == null) {
+                return null;
+            }
+            assert userInfo.length == 6;
+            return new UserData(
+                    userInfo[0], Integer.parseInt(userInfo[2]), Integer.parseInt(userInfo[3]),
+                    Double.parseDouble(userInfo[4]), Integer.parseInt(userInfo[5]));
+        } catch (IOException e) {
+            System.err.println("Error: " + e);
+            return null;
+        }
+    }
+
+    @Override
+    public List<String[]> getUserLeaderboard() throws RemoteException {
+        userInfoLock.readLock().lock();
+        try {
+            List<String[]> leaderboard = new ArrayList<>();
+            try (BufferedReader br = new BufferedReader(new FileReader(USER_INFO_FILE))) {
+                String line;
+                int counter = 1;
+                while ((line = br.readLine()) != null) {
+                    String[] parts = line.split(", ");
+                    if (parts.length == 6) {
+                        leaderboard.add(new String[]{
+                            parts[0],
+                            counter++ + "",
+                            parts[2],
+                            parts[3],
+                            parts[4],
+                            parts[5]
+                        });
+                    }
+                }
+            }
+            leaderboard.sort((a, b) -> Integer.parseInt(a[5]) - Integer.parseInt(b[5]));
+            return leaderboard;
+        } catch (IOException e) {
+            System.err.println("Error: " + e);
+            return null;
+        } finally {
+            userInfoLock.readLock().unlock();
+        }
+    }
     
     @Override
     public RegisterStatus register(String username, String passwordHash) throws RemoteException {
@@ -124,9 +165,9 @@ public class AuthenticationManager extends UnicastRemoteObject implements Authen
         try (BufferedReader br = new BufferedReader(new FileReader(USER_INFO_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split(" ");
-                if (parts.length == 2 && parts[0].equals(username)) {
-                    return new String[] { parts[0], parts[1] };
+                String[] parts = line.split(", ");
+                if (parts.length == 6 && parts[0].equals(username)) {
+                    return parts.clone();
                 }
             }
         }
@@ -143,8 +184,17 @@ public class AuthenticationManager extends UnicastRemoteObject implements Authen
     }
 
     private void writeUserInfo(String username, String passwordHash) throws IOException {
+        // Create random number of wins, losses, and winTime
+        int wins = (int) (Math.random() * 100);
+        int losses = (int) (Math.random() * 100);
+        double winTime =  ((int) (Math.random() * 100)) + ((int) (Math.random() * 100)) / 100.0;
+        int rank = rankCounter++;
+        String cleanedUsername = username.trim();
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(USER_INFO_FILE, true))) {
-            bw.write(username + " " + passwordHash);
+            bw.write(cleanedUsername + ", " + passwordHash + ", ");
+            bw.write(
+                new UserData(cleanedUsername, wins, losses + wins, winTime, rank).toString()
+            );
             bw.newLine();
         }
     }

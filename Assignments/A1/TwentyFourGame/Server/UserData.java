@@ -18,4 +18,8 @@ public final class UserData  implements Serializable {
         this.avgWinTime = avgWinTime;
         this.rank = rank;
     }
+
+    public String toString() {
+        return wins + ", " + games + ", " + avgWinTime + ", " + rank;
+    }
 }

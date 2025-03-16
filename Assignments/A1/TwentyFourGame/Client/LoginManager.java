@@ -34,6 +34,10 @@ public class LoginManager {
             return;
         }
 
+        RMI_login(username, passwordHash, authHandler);
+    }
+
+    public void RMI_login(String username, String passwordHash, Authenticate authHandler) {
         // RMI Call to Server for Login
         try {
             LoginStatus status = authHandler.login(username, passwordHash);

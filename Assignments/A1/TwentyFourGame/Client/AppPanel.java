@@ -5,16 +5,22 @@ import java.awt.event.*;
 import java.rmi.RemoteException;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+
+import java.util.List;
 
 import TwentyFourGame.Server.Authenticate;
 import TwentyFourGame.Server.LogoutStatus;
 import TwentyFourGame.Server.UserData;
 
+// TODO: On exit call Logout!
+
 public class AppPanel extends JPanel {
 
     private JFrame parentFrame;
     private Authenticate authHandler;
-    private UserData userData;
+
+    private String username;
 
     public AppPanel(JFrame parentFrame, Authenticate authHandler) {
         this.parentFrame = parentFrame;
@@ -61,17 +67,20 @@ public class AppPanel extends JPanel {
         gridConstraints.gridwidth = 2;
         gridConstraints.anchor = GridBagConstraints.EAST;
         JButton registerButton = new JButton("Register");
-        registerButton.addActionListener(
-            new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    parentFrame.setVisible(false);
-                    RegistrationManager registrationDialog = new RegistrationManager(parentFrame, authHandler);
-                    registrationDialog.setVisible(true);
-                    if (registrationDialog.isRegistered()) {
-                        showGamePanel();
-                    }
+        registerButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parentFrame.setVisible(false);
+                RegistrationManager registrationDialog = new RegistrationManager(
+                    parentFrame, authHandler
+                ); 
+                registrationDialog.setVisible(true);
+                if (registrationDialog.isRegistered() && registrationDialog.isLoggedIn()) {
+                    UserData userData = registrationDialog.getUserData();
+                    username = userData.username; 
+                    showGamePanel(userData);
                 }
+            }
             }
         );
         this.add(registerButton, gridConstraints);
@@ -82,23 +91,21 @@ public class AppPanel extends JPanel {
         gridConstraints.gridwidth = 2;
         gridConstraints.anchor = GridBagConstraints.WEST;
         JButton loginButton = new JButton("Login");
-        loginButton.addActionListener(
-            new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    LoginManager loginManager = new LoginManager(parentFrame, usernameField, passwordField);
-                    loginManager.attemptLogin(authHandler);
-                    if (loginManager.isLoggedIn()) {
-                        userData = loginManager.getUserData();
-                        showGamePanel();
-                    }
+        loginButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                LoginManager loginManager = new LoginManager(parentFrame, usernameField, passwordField);
+                loginManager.attemptLogin(authHandler);
+                if (loginManager.isLoggedIn()) {
+                    showGamePanel(loginManager.getUserData());
                 }
+            }
             }
         );
         this.add(loginButton, gridConstraints);
     }
 
-    public void showGamePanel() {
+    private void showGamePanel(UserData userdata) {
         // Remove all existing components
         this.removeAll();
 
@@ -106,20 +113,18 @@ public class AppPanel extends JPanel {
         JTabbedPane tabbedPane = new JTabbedPane();
 
         // User Profile tab
-        JPanel userProfilePanel = new UserPanel();
+        JPanel userProfilePanel = new UserPanel(userdata);
 
         tabbedPane.addTab("User Profile", userProfilePanel);
 
-        // TODO: Create Game Panel
         // Play Game tab
         JPanel playGamePanel = new JPanel();
-        // Add your play game UI components here
         tabbedPane.addTab("Play Game", playGamePanel);
 
         // Leader Board tab
-        JPanel leaderBoardPanel = new JPanel();
-        // Add your leader board UI components here
+        JPanel leaderBoardPanel = new LeaderboardPanel();
         tabbedPane.addTab("Leader Board", leaderBoardPanel);
+
 
         // Logout tab
         JButton logoutBtn = new JButton("Logout");
@@ -129,7 +134,7 @@ public class AppPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     // RMI Call to Server for Logout
                     try {
-                        LogoutStatus result = authHandler.logout(userData.username);
+                        LogoutStatus result = authHandler.logout(username);
                         if (result == LogoutStatus.SERVER_ERROR) {
                             Notification.showError("Server error while logging out", parentFrame);
                         } // Successful Otherwise
@@ -146,7 +151,6 @@ public class AppPanel extends JPanel {
             }
         );
 
-        // Add your logout UI components here
         tabbedPane.addTab("Logout", logoutBtn);
 
         // Add the tabbed pane to the main panel
@@ -161,8 +165,8 @@ public class AppPanel extends JPanel {
 
     private class UserPanel extends JPanel {
         
-        public UserPanel() {
-            createUserProfilePage(userData);
+        public UserPanel(UserData userdata) {
+            createUserProfilePage(userdata);
         }
 
         private void createUserProfilePage(UserData userData) {
@@ -222,6 +226,40 @@ public class AppPanel extends JPanel {
             constraints.gridy = 5;
             constraints.weighty = 1.0;
             this.add(Box.createVerticalGlue(), constraints);
+        }
+    }
+
+    private class LeaderboardPanel extends JPanel {
+        public LeaderboardPanel() {
+            setLayout(new BorderLayout());
+            createLeaderboardTable();
+        }
+
+        private void createLeaderboardTable() {
+            // Create the table model
+            DefaultTableModel tableModel = new DefaultTableModel(
+                    new Object[]{"Rank", "Player", "Games won", "Games played", "Avg. winning time"}, 0
+            );
+
+            // Populate the table model with data from the server
+            try {
+                List<String[]> leaderboardData = authHandler.getUserLeaderboard();
+                for (String[] row : leaderboardData) {
+                    tableModel.addRow(row);
+                }
+            } catch (RemoteException e) {
+                System.err.println("Error retrieving leaderboard data: " + e);
+                return;
+            }
+
+            // Create the JTable and add it to the panel
+            JTable leaderboardTable = new JTable(tableModel);
+            leaderboardTable.setAutoCreateRowSorter(true);
+            leaderboardTable.setFillsViewportHeight(true);
+            leaderboardTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+            JScrollPane scrollPane = new JScrollPane(leaderboardTable);
+            add(scrollPane, BorderLayout.CENTER);
         }
     }
 }

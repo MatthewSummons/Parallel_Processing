@@ -7,6 +7,7 @@ import java.rmi.RemoteException;
 import java.util.Arrays;
 import TwentyFourGame.Server.Authenticate;
 import TwentyFourGame.Server.RegisterStatus;
+import TwentyFourGame.Server.UserData;
 import TwentyFourGame.Server.HashUtil;
 
 
@@ -17,9 +18,12 @@ public class RegistrationManager extends JDialog {
     private JTextField usernameField;
     private JPasswordField passwordField;
     private JPasswordField confirmPasswordField;
+
     
     private Authenticate authHandler;
     private boolean isRegistered = false;
+    private boolean isLoggedIn = false;
+    private UserData userData;
 
     // TODO: Clean up the UI
     public RegistrationManager(JFrame parent, Authenticate authHandler) {
@@ -73,6 +77,9 @@ public class RegistrationManager extends JDialog {
             if (userName.isEmpty()) {
                 Notification.showError("Login Name cannot be empty!", parentFrame);
                 return;
+            } else if (userName.contains(" ")) {
+                Notification.showError("Login Name cannot contain spaces!", parentFrame);
+                return;
             }   
 
             // Grab the passwords and obtain their hashes
@@ -107,6 +114,12 @@ public class RegistrationManager extends JDialog {
                         dispose();
 
                         isRegistered = true;
+                        LoginManager loginManager = new LoginManager(parentFrame, null, null);
+                        loginManager.RMI_login(userName, passwordHash, authHandler);
+                        isLoggedIn = loginManager.isLoggedIn();
+                        if (isLoggedIn) {
+                            userData = loginManager.getUserData();
+                        }
                     }
 
                 } catch (RemoteException ex) {
@@ -122,5 +135,15 @@ public class RegistrationManager extends JDialog {
 
     public boolean isRegistered() {
         return isRegistered;
+    }
+
+    public boolean isLoggedIn() {
+        return isLoggedIn;
+    }
+
+    public UserData getUserData() {
+        assert isRegistered;
+        assert isLoggedIn;
+        return userData;
     }
 }
