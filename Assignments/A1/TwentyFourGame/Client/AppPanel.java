@@ -13,7 +13,7 @@ import TwentyFourGame.Server.Authenticate;
 import TwentyFourGame.Server.LogoutStatus;
 import TwentyFourGame.Server.UserData;
 
-// TODO: On exit call Logout!
+
 
 public class AppPanel extends JPanel {
 
@@ -27,6 +27,20 @@ public class AppPanel extends JPanel {
         this.authHandler = authHandler;
         
         showLoginPanel();
+
+        // Logout on kill signal
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+            try {
+                if (username != null) {
+                authHandler.logout(username);
+                }
+            } catch (RemoteException ex) {
+                System.err.println("Error logging out: " + ex);
+            }
+            }
+        });
     }
     
     public void showLoginPanel() {
@@ -97,7 +111,9 @@ public class AppPanel extends JPanel {
                 LoginManager loginManager = new LoginManager(parentFrame, usernameField, passwordField);
                 loginManager.attemptLogin(authHandler);
                 if (loginManager.isLoggedIn()) {
-                    showGamePanel(loginManager.getUserData());
+                    UserData userData = loginManager.getUserData();
+                    username = userData.username;
+                    showGamePanel(userData);
                 }
             }
             }
@@ -134,6 +150,7 @@ public class AppPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     // RMI Call to Server for Logout
                     try {
+                        assert (username != null);
                         LogoutStatus result = authHandler.logout(username);
                         if (result == LogoutStatus.SERVER_ERROR) {
                             Notification.showError("Server error while logging out", parentFrame);
