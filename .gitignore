@@ -1,0 +1,8 @@
+# Mac OS Artefacts
+.DS_Store
+
+# Java Build Files
+*.class
+
+# Secrets
+*.pem
