@@ -32,28 +32,62 @@ public class RegistrationManager extends JDialog {
         this.authHandler = authHandler;
 
         // Set layout and size
-        setLayout(new GridLayout(5, 2));
+        setLayout(new GridBagLayout());
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setSize(300, 200);
+        setSize(600, 450);
         setLocationRelativeTo(parent);
+        setResizable(true);
 
         // Add components
-        add(new JLabel("Login Name:"));
-        usernameField = new JTextField();
-        add(usernameField);
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.insets = new Insets(15, 20, 15, 20);
+        constraints.fill = GridBagConstraints.HORIZONTAL;
 
-        add(new JLabel("Password:"));
-        passwordField = new JPasswordField();
-        add(passwordField);
+        // Username
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.anchor = GridBagConstraints.EAST;
+        add(new JLabel("Login Name:"), constraints);
 
-        add(new JLabel("Confirm Password:"));
-        confirmPasswordField = new JPasswordField();
-        add(confirmPasswordField);
+        constraints.gridx = 1;
+        constraints.anchor = GridBagConstraints.WEST;
+        usernameField = new JTextField(25);
+        add(usernameField, constraints);
+
+        // Password
+        constraints.gridx = 0;
+        constraints.gridy = 1;
+        constraints.anchor = GridBagConstraints.EAST;
+        add(new JLabel("Password:"), constraints);
+
+        constraints.gridx = 1;
+        constraints.anchor = GridBagConstraints.WEST;
+        passwordField = new JPasswordField(25);
+        add(passwordField, constraints);
+
+        // Confirm Password
+        constraints.gridx = 0;
+        constraints.gridy = 2;
+        constraints.anchor = GridBagConstraints.EAST;
+        add(new JLabel("Confirm Password:"), constraints);
+
+        constraints.gridx = 1;
+        constraints.anchor = GridBagConstraints.WEST;
+        confirmPasswordField = new JPasswordField(25);
+        add(confirmPasswordField, constraints);
+
+        // Buttons
+        constraints.gridx = 0;
+        constraints.gridy = 3;
+        constraints.gridwidth = 2;
+        constraints.anchor = GridBagConstraints.CENTER;
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 
         // Register button
         JButton registerButton = new JButton("Register");
-        registerButton.addActionListener(new RegistrationHandler()); 
-        add(registerButton);
+        registerButton.addActionListener(new RegistrationHandler());
+        buttonPanel.add(registerButton);
 
         // Cancel button
         JButton cancelButton = new JButton("Cancel");
@@ -65,7 +99,9 @@ public class RegistrationManager extends JDialog {
                 dispose();
             }
         });
-        add(cancelButton);
+        buttonPanel.add(cancelButton);
+
+        add(buttonPanel, constraints);
     }
 
     // Handles RMI Call To The Server
