@@ -25,7 +25,6 @@ public class RegistrationManager extends JDialog {
     private boolean isLoggedIn = false;
     private UserData userData;
 
-    // TODO: Clean up the UI
     public RegistrationManager(JFrame parent, Authenticate authHandler) {
         super(parent, "Register", true);
         this.parentFrame = parent;
