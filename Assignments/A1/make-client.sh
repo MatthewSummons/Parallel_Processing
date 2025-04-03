@@ -18,8 +18,7 @@ javac -source 1.8 -target 1.8 "${files[@]}"
 # Check if the compilation was successful
 if [ $? -eq 0 ]; then
     # Run the main class
-    /Library/Java/JavaVirtualMachines/jdk-1.8.jdk/Contents/Home/bin/java "${SRC}.Main"  $1
-    # /Library/Java/JavaVirtualMachines/jdk-1.8.jdk/Contents/Home/bin/java -Djava.security.policy=./TwentyFourGame/security.policy ${SRC}.Main $1
+    java "${SRC}.Main"  $1
 else
     echo "Compilation failed."
 fi

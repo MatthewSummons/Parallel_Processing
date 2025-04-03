@@ -1,5 +1,6 @@
-# Mac OS Artefacts
+# Mac OS
 .DS_Store
+*.pages
 
 # Java Build Files
 *.class
