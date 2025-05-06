@@ -4,7 +4,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.rmi.RemoteException;
+
 import java.util.Arrays;
+
 import TwentyFourGame.Server.Authenticate;
 import TwentyFourGame.Server.RegisterStatus;
 import TwentyFourGame.Server.UserData;
@@ -115,7 +117,7 @@ public class RegistrationManager extends JDialog {
             } else if (userName.contains(" ")) {
                 Notification.showError("Login Name cannot contain spaces!", parentFrame);
                 return;
-            } else if (userName.length() > 40) {
+            } else if (userName.length() > UserData.MAX_USRERNAME_LENGTH) {
                 Notification.showError(
                     "Login Name cannot be longer than 80 characters!", parentFrame
                 ); return;
@@ -183,8 +185,7 @@ public class RegistrationManager extends JDialog {
     public UserData getUserData() {
         if (isRegistered && isLoggedIn) {
             return userData;
-        } 
-        
+        } Notification.showError("User is not registered or logged in!", parentFrame);
         throw new IllegalStateException("User is not registered or logged in.");
     }
 }

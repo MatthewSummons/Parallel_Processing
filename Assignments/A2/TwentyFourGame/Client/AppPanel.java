@@ -7,7 +7,7 @@ import java.rmi.RemoteException;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import TwentyFourGame.Server.Authenticate;
 import TwentyFourGame.Server.LogoutStatus;
@@ -34,7 +34,7 @@ public class AppPanel extends JPanel {
             public void run() {
             try {
                 if (username != null) {
-                authHandler.logout(username);
+                    authHandler.logout(username);
                 }
             } catch (RemoteException ex) {
                 System.err.println("Error logging out: " + ex);
@@ -260,7 +260,7 @@ public class AppPanel extends JPanel {
 
             // Populate the table model with data from the server
             try {
-                List<String[]> leaderboardData = authHandler.getUserLeaderboard();
+                ArrayList<String[]> leaderboardData = authHandler.getUserLeaderboard();
                 for (String[] row : leaderboardData) {
                     tableModel.addRow(row);
                 }

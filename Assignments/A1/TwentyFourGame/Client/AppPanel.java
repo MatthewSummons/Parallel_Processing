@@ -34,7 +34,7 @@ public class AppPanel extends JPanel {
             public void run() {
             try {
                 if (username != null) {
-                authHandler.logout(username);
+                    authHandler.logout(username);
                 }
             } catch (RemoteException ex) {
                 System.err.println("Error logging out: " + ex);

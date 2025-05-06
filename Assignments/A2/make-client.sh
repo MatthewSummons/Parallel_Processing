@@ -17,6 +17,7 @@ javac -source 1.8 -target 1.8 "${files[@]}"
 
 # Check if the compilation was successful
 if [ $? -eq 0 ]; then
+    # TODO: Modify to Just Java (Mention in report)
     # Run the main class
     /Library/Java/JavaVirtualMachines/jdk-1.8.jdk/Contents/Home/bin/java "${SRC}.Main"  $1
 else

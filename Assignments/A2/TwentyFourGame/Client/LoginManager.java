@@ -32,7 +32,7 @@ public class LoginManager {
         if (username.isEmpty() || password.length == 0) {
             Notification.showError("Username and Password cannot be empty!", parentFrame);
             return;
-        } else if (username.length() > 40) {
+        } else if (username.length() > UserData.MAX_USRERNAME_LENGTH) {
             Notification.showError(
                 "Login Name cannot be longer than 80 characters!", parentFrame
             );return;

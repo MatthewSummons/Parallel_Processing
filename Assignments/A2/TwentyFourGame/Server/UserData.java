@@ -5,6 +5,8 @@ import java.io.Serializable;
 public final class UserData  implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    public static final int MAX_USRERNAME_LENGTH = 40;
+
     public String username;
     public int wins;
     public int games;
