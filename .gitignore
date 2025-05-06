@@ -2,8 +2,9 @@
 .DS_Store
 *.pages
 
-# Java Build Files
+# Java Build Files/Drivers
 *.class
+*mysql*/
 
 # Secrets
 *.pem
