@@ -49,7 +49,7 @@ public class LoginManager {
             if (status == LoginStatus.INVALID_CREDENTIALS) {
                 Notification.showError("Invalid Credentials!", parentFrame);
                 return;
-            } else if (status == LoginStatus.LOGGED_IN) {
+            } else if (status == LoginStatus.ALREADY_LOGGED_IN) {
                 Notification.showError("User Already Logged In!", parentFrame);
                 return;
             } else if (status == LoginStatus.SERVER_ERROR) {

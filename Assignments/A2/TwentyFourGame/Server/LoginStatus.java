@@ -2,7 +2,7 @@ package TwentyFourGame.Server;
 
 public enum LoginStatus {
     SUCCESS,
-    LOGGED_IN,
+    ALREADY_LOGGED_IN,
     INVALID_CREDENTIALS,
     SERVER_ERROR
 }

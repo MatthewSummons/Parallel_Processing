@@ -17,8 +17,9 @@ CREATE TABLE UserInfo(
 CREATE TABLE OnlineUser(
     -- UserID INT,
     -- FOREIGN KEY(UserID) REFERENCES UserInfo(UserID)
-    username VARCHAR(40),
-    FOREIGN KEY(username) REFERENCES UserInfo(username)
+    username VARCHAR(40) NOT NULL,
+    FOREIGN KEY (username) REFERENCES UserInfo(username),
+    PRIMARY KEY (username)
 );
 
 INSERT INTO UserInfo(username, passHash, wins, games, avgWinTime)
