@@ -7,8 +7,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import java.util.ArrayList;
-
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class DatabaseManager {
@@ -115,9 +113,12 @@ public class DatabaseManager {
     public UserData readUserInfo(String username) {
         try {
             PreparedStatement stmt = conn.prepareStatement(
-                "SELECT username, wins, games, avgWinTime, " + 
-                "dense_rank() OVER (ORDER BY wins desc) AS player_rank" +  
-                " FROM " + USR_TBL +  " WHERE username = ?"
+                "SELECT * FROM (" +
+                "  SELECT username, wins, games, avgWinTime, " + 
+                "  dense_rank() OVER (ORDER BY wins desc) AS player_rank " +  
+                "  FROM " + USR_TBL +
+                ") ranked_users " +
+                "WHERE username = ?"
             ); stmt.setString(1, username);
             
             UserInfoLock.readLock().lock();
@@ -192,11 +193,9 @@ public class DatabaseManager {
         }
     }
     
-    // FIXME: Untested
-    public ArrayList<String[]> fetchUserLeaderboard() {
-        
+    public ArrayList<UserData> fetchUserLeaderboard() {   
         UserInfoLock.readLock().lock();
-        ArrayList<String[]> leaderboard = new ArrayList<>();
+        ArrayList<UserData> leaderboard = new ArrayList<>();
         try {
             PreparedStatement stmt = conn.prepareStatement(
                 "SELECT username, wins, games, avgWinTime, dense_rank() OVER (ORDER BY wins desc) AS player_rank" +  
@@ -204,22 +203,20 @@ public class DatabaseManager {
             );
             
             ResultSet rs = stmt.executeQuery();
-            int counter = 1;
             while (rs.next()) {
-                leaderboard.add(new String[]{
+                leaderboard.add(new UserData(
                     rs.getString("username"),
-                    counter++ + "",
-                    rs.getInt("wins") + "",
-                    rs.getInt("games") + "",
-                    rs.getDouble("avgWinTime") + "",
-                    rs.getInt("player_rank") + ""
-                });
+                    rs.getInt("wins"),
+                    rs.getInt("games"),
+                    rs.getDouble("avgWinTime"),
+                    rs.getInt("player_rank")
+                ));
             }
         } catch (SQLException e) { 
             System.err.println("Error reading user info: " + e);
         } finally { UserInfoLock.readLock().unlock(); }
         
-        return new ArrayList<String[]>();
+        return leaderboard;
     }
 
     public LogoutStatus RemoveOnlineUser(String username) {
@@ -238,5 +235,37 @@ public class DatabaseManager {
         } finally { OnlineUserLock.writeLock().unlock(); }
     }
 
+    private void updateUserTable(
+        String username, int wins, int games, double avgWinTime
+    ) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE " + USR_TBL + 
+                " SET wins = ?, games = ?, avgWinTime = ? WHERE username = ?"
+            ); 
+            
+            stmt.setInt(1, wins);
+            stmt.setInt(2, games);
+            stmt.setDouble(3, avgWinTime);
+            stmt.setString(4, username);
+            
+            UserInfoLock.writeLock().lock();
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error updating user info: " + e);
+        } finally { UserInfoLock.writeLock().unlock(); }
+    }
 
+    private void deleteUser(String username) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement(
+                "DELETE FROM " + USR_TBL + " WHERE username = ?"
+            ); stmt.setString(1, username);
+            
+            UserInfoLock.writeLock().lock();
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error deleting user: " + e);
+        } finally { UserInfoLock.writeLock().unlock(); }
+    }
 }

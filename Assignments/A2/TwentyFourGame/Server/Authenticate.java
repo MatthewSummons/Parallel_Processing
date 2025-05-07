@@ -10,6 +10,6 @@ public interface Authenticate extends Remote {
     RegisterStatus register(String username, String passwordHash) throws RemoteException;
     UserData getUserData(String username) throws RemoteException;
     LoginStatus login(String username, String passwordHash) throws RemoteException;
-    ArrayList<String[]> getUserLeaderboard() throws RemoteException;
+    ArrayList<UserData> getUserLeaderboard() throws RemoteException;
     LogoutStatus logout(String username) throws RemoteException;
 }

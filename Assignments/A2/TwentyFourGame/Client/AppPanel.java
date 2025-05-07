@@ -260,9 +260,11 @@ public class AppPanel extends JPanel {
 
             // Populate the table model with data from the server
             try {
-                ArrayList<String[]> leaderboardData = authHandler.getUserLeaderboard();
-                for (String[] row : leaderboardData) {
-                    tableModel.addRow(row);
+                ArrayList<UserData> leaderboardData = authHandler.getUserLeaderboard();
+                for (UserData row : leaderboardData) {
+                    tableModel.addRow(
+                        new Object[]{ row.rank, row.username, row.wins, row.games, row.avgWinTime }
+                    );
                 }
             } catch (RemoteException e) {
                 System.err.println("Error retrieving leaderboard data: " + e);
