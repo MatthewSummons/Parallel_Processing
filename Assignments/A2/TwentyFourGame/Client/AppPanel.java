@@ -87,8 +87,7 @@ public class AppPanel extends JPanel {
                 parentFrame.setVisible(false);
                 RegistrationManager registrationDialog = new RegistrationManager(
                     parentFrame, authHandler
-                ); 
-                registrationDialog.setVisible(true);
+                ); registrationDialog.setVisible(true);
                 if (registrationDialog.isRegistered() && registrationDialog.isLoggedIn()) {
                     UserData userData = registrationDialog.getUserData();
                     username = userData.username; 
@@ -96,8 +95,7 @@ public class AppPanel extends JPanel {
                 }
             }
             }
-        );
-        this.add(registerButton, gridConstraints);
+        ); this.add(registerButton, gridConstraints);
 
         // Login Button
         gridConstraints.gridx = 2;
@@ -117,8 +115,7 @@ public class AppPanel extends JPanel {
                 }
             }
             }
-        );
-        this.add(loginButton, gridConstraints);
+        ); this.add(loginButton, gridConstraints);
     }
 
     private void showGamePanel(UserData userdata) {

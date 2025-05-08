@@ -49,6 +49,6 @@ public class AuthenticationManager extends UnicastRemoteObject implements Authen
 
     @Override
     public LogoutStatus logout(String username) throws RemoteException {
-        return DB.RemoveOnlineUser(username);
+        return DB.removeOnlineUser(username);
     }
 }

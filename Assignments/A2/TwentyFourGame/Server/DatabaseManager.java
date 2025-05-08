@@ -219,7 +219,7 @@ public class DatabaseManager {
         return leaderboard;
     }
 
-    public LogoutStatus RemoveOnlineUser(String username) {
+    public LogoutStatus removeOnlineUser(String username) {
         try {
             PreparedStatement stmt = conn.prepareStatement(
                 "DELETE FROM " + ONL_TBL + " WHERE username = ?"

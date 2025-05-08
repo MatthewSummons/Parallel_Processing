@@ -9,18 +9,19 @@ files=(
     "${SRC}/AuthenticationManager.java"
 )
 
-# Export MySQL Plugin for JDBC
-# TODO: Modify and put in report & add Part about running mysql
-export CLASSPATH=$CLASSPATH:"/Users/matthewsummons/Desktop/HKU Courses/2024-25/Y4S2/COMP3358/Assignments/A2/mysql-connector-j-9.3.0/mysql-connector-j-9.3.0.jar"
+### Export MySQL Plugin for JDBC
+# Relative path to JDBC Driver, comment this and uncomment line below if there are issues
+export CLASSPATH=$CLASSPATH:"$(dirname "$0")/mysql-connector-j-9.3.0/mysql-connector-j-9.3.0.jar"
+# Uncomment and add path manually here
+# export CLASSPATH=$CLASSPATH:"/path/to/mysql-connector-j-9.3.0.jar"
 
 # Compile the Java files
 javac -source 1.8 -target 1.8 "${files[@]}"
 
 # Check if the compilation was successful
- if [ $? -eq 0 ]; then
-    # TODO: Modify to Just Java (Mention in report)
+if [ $? -eq 0 ]; then
     # Run the launch the server; Don't forget to launch rmiregistry
-    /Library/Java/JavaVirtualMachines/jdk-1.8.jdk/Contents/Home/bin/java -Djava.security.policy=./TwentyFourGame/security.policy TwentyFourGame.Server.AuthenticationManager
- else
-     echo "Compilation failed."
- fi
+    java -Djava.security.policy=./TwentyFourGame/security.policy TwentyFourGame.Server.AuthenticationManager
+else
+    echo "Compilation failed."
+fi
