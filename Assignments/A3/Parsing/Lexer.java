@@ -58,6 +58,11 @@ public class Lexer {
             }
             
             switch (currentChar) {
+                case 'a':
+                case 'A':
+                    tokens.add(new Token(TokenType.NUMBER, 1));
+                    advance();
+                    break;
                 case 'j':
                 case 'J':
                     tokens.add(new Token(TokenType.NUMBER, 11));
