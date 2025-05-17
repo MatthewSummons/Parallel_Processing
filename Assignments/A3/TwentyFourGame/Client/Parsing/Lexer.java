@@ -1,4 +1,4 @@
-package Parsing;
+package TwentyFourGame.Client.Parsing;
 
 import java.util.ArrayList;
 

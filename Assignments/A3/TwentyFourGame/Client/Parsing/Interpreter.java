@@ -1,13 +1,12 @@
-package Parsing;
-
-import Parsing.AST.AST_Node;
-import Parsing.AST.BinOp_Node;
-import Parsing.AST.Int_Node;
+package TwentyFourGame.Client.Parsing;
 
 import java.util.ArrayList;
 
-public class Interpreter {
+import TwentyFourGame.Client.Parsing.AST.AST_Node;
+import TwentyFourGame.Client.Parsing.AST.BinOp_Node;
+import TwentyFourGame.Client.Parsing.AST.Int_Node;
 
+public class Interpreter {
     /*
      * Checks if the AST uses all the values in the allowed list exactly once.
      * Return an ArrayList of integers that are not used in the AST.
@@ -35,7 +34,7 @@ public class Interpreter {
         }
     }
 
-    public double evaluate(AST_Node ast) {
+    private static double evaluate(AST_Node ast) {
         if (ast instanceof Int_Node) {
             return ((Int_Node) ast).value;
         } else if (ast instanceof BinOp_Node) {
@@ -55,18 +54,20 @@ public class Interpreter {
         }
     }
 
-    public static void main(String[] args) {
-        AST_Node ast = new Parser().parse("J + Q * (k - J) + J + J + 3");
-        ArrayList<Integer> allowed = new ArrayList<>();
-        allowed.add(11);
-        allowed.add(12);
-        allowed.add(11);
-        allowed.add(13);
+    public static boolean checkTwentyFour(String input, ArrayList<Integer> allowed) {
+        Parser parser = new Parser();
+        AST_Node ast = parser.parse(input);
 
-        System.out.println(validate(allowed, ast));
+        if (ast == null) {
+            return false; // Invalid expression
+        }
 
-        Interpreter interpreter = new Interpreter();
-        double result = interpreter.evaluate(ast);
-        System.out.println("Result: " + result);
+        ArrayList<Integer> result = validate(allowed, ast);
+        if (result.isEmpty()) {
+            double evaluationResult = evaluate(ast);
+            return evaluationResult == 24;
+        } else {
+            return false;
+        }
     }
 }

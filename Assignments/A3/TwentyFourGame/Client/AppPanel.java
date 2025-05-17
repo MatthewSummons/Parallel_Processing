@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import TwentyFourGame.Server.Authenticate;
 import TwentyFourGame.Server.LogoutStatus;
@@ -91,7 +92,7 @@ public class AppPanel extends JPanel {
                 if (registrationDialog.isRegistered() && registrationDialog.isLoggedIn()) {
                     UserData userData = registrationDialog.getUserData();
                     username = userData.username; 
-                    showGamePanel(userData);
+                    showMainPanel(userData);
                 }
             }
             }
@@ -111,14 +112,14 @@ public class AppPanel extends JPanel {
                 if (loginManager.isLoggedIn()) {
                     UserData userData = loginManager.getUserData();
                     username = userData.username;
-                    showGamePanel(userData);
+                    showMainPanel(userData);
                 }
             }
             }
         ); this.add(loginButton, gridConstraints);
     }
 
-    private void showGamePanel(UserData userdata) {
+    private void showMainPanel(UserData userdata) {
         // Remove all existing components
         this.removeAll();
 
@@ -131,7 +132,7 @@ public class AppPanel extends JPanel {
         tabbedPane.addTab("User Profile", userProfilePanel);
 
         // Play Game tab
-        JPanel playGamePanel = new JPanel();
+        JButton playGamePanel = new WaitingButton(tabbedPane);
         tabbedPane.addTab("Play Game", playGamePanel);
 
         // Leader Board tab
@@ -277,5 +278,155 @@ public class AppPanel extends JPanel {
             JScrollPane scrollPane = new JScrollPane(leaderboardTable);
             add(scrollPane, BorderLayout.CENTER);
         }
+    }
+
+    private class WaitingButton extends JButton {
+        public JTabbedPane parent;
+        public WaitingButton(JTabbedPane parent) {
+            super("Play Game");
+            this.parent = parent;
+            this.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                   
+                   // TODO: Business Logic here
+                    TransitionToGamePanel();
+                }
+            });
+        }
+
+        private void TransitionToGamePanel() {
+            // Find the parent tabbed pane
+            Component component = WaitingButton.this.parent;
+            while (!(component instanceof JTabbedPane) && component != null) {
+                component = component.getParent();
+            }
+
+            if (component != null) {
+                // Replace this panel with game panel
+                JTabbedPane tabbedPane = (JTabbedPane) component;
+                int index = tabbedPane.indexOfComponent(WaitingButton.this);
+                // FIXME: Remove Boilerplate seeding{
+                String[] cards = {"A♠", "K♣", "2♦", "3♥"};
+                String[][] players = {
+                    { "Kevin", "Win: 0/0 avg: 0.0s" },
+                    { "Kevin2", "Win: 0/0 avg: 0.0s" },
+                    { "Kevin3", "Win: 0/0 avg: 0.0s" },
+                    { "Kevin4", "Win: 0/0 avg: 0.0s" }
+                };
+                tabbedPane.setComponentAt(index, new GamePanel(cards, players));
+            }
+        }
+    }
+
+    private class GamePanel extends JPanel {
+        public GamePanel(String[] cards, String[][] players) {
+            setLayout(new BorderLayout(10, 10));
+            setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+            // Card display (4 cards)
+            JPanel cardsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+            cardsPanel.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
+
+            for (String card : cards) {
+                JPanel cardPanel = createPlayingCard(card);
+                cardsPanel.add(cardPanel);
+            } add(cardsPanel, BorderLayout.CENTER);
+
+            // Player list with styled boxes
+            JPanel playersPanel = new JPanel();
+            playersPanel.setLayout(new BoxLayout(playersPanel, BoxLayout.Y_AXIS));
+            playersPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+            for (String[] player : players) {
+                JPanel playerBox = new JPanel();
+                playerBox.setLayout(new BoxLayout(playerBox, BoxLayout.Y_AXIS));
+                playerBox.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+                playerBox.setBackground(new Color(240, 240, 240));
+                playerBox.setMaximumSize(new Dimension(200, 60));
+                playerBox.setPreferredSize(new Dimension(150, 60));
+
+                JLabel nameLabel = new JLabel(player[0]);
+                nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                nameLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+
+                JLabel statsLabel = new JLabel(player[1]);
+                statsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                statsLabel.setBorder(BorderFactory.createEmptyBorder(2, 0, 5, 0));
+
+                playerBox.add(nameLabel);
+                playerBox.add(statsLabel);
+
+                playersPanel.add(playerBox);
+                playersPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            }
+            
+            add(playersPanel, BorderLayout.EAST);
+
+            // Input field with result label
+            JPanel expressionPanel = new JPanel(new BorderLayout(5, 0));
+            expressionPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+            JLabel resultLabel = new JLabel();
+            resultLabel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+            expressionPanel.add(resultLabel, BorderLayout.EAST);
+            
+            JTextField expressionField = new JTextField();
+            expressionField.addActionListener(new ExpressionEvaluator(expressionField, resultLabel, cards));    
+            expressionPanel.add(expressionField, BorderLayout.CENTER);
+            add(expressionPanel, BorderLayout.SOUTH);
+        }
+
+        private JPanel createPlayingCard(String cardValue) {
+            // Define fixed card dimensions
+            final int cardWidth = 120;
+            final int cardHeight = 160;
+            
+            // Create a fixed-size container panel with null layout
+            JPanel fixedSizeContainer = new JPanel(null);
+            fixedSizeContainer.setPreferredSize(new Dimension(cardWidth, cardHeight));
+            
+            // Create the actual card panel
+            JPanel cardOuter = new JPanel(new BorderLayout());
+            cardOuter.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
+            cardOuter.setBounds(0, 0, cardWidth, cardHeight);
+            
+            JPanel cardPanel = new JPanel(new BorderLayout());
+            cardPanel.setBackground(Color.WHITE);
+            cardPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+            // Parse card value
+            // String rank = cardValue.substring(0, cardValue.length() - 1);
+            String suit = cardValue.substring(cardValue.length() - 1);
+
+            // Determine color based on suit
+            Color textColor = 
+                (suit.equals("♥") || suit.equals("♦")) ? Color.RED : Color.BLACK;
+
+            // Top-left rank and suit
+            JLabel topLeftLabel = new JLabel(cardValue);
+            topLeftLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            topLeftLabel.setForeground(textColor);
+            cardPanel.add(topLeftLabel, BorderLayout.NORTH);
+
+            // Center suit/image (larger)
+            JLabel centerLabel = new JLabel(suit, SwingConstants.CENTER);
+            centerLabel.setFont(new Font("Arial", Font.BOLD, 50));
+            centerLabel.setForeground(textColor);
+            cardPanel.add(centerLabel, BorderLayout.CENTER);
+
+            // Bottom-right rank and suit (upside down)
+            JLabel bottomRightLabel = new JLabel(cardValue, SwingConstants.RIGHT);
+            bottomRightLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            bottomRightLabel.setForeground(textColor);
+            cardPanel.add(bottomRightLabel, BorderLayout.SOUTH);
+
+            cardOuter.add(cardPanel);
+            fixedSizeContainer.add(cardOuter);
+            
+            return fixedSizeContainer;
+        }
+
+        
     }
 }

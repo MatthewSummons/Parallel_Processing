@@ -1,4 +1,4 @@
-package Parsing;
+package TwentyFourGame.Client.Parsing;
 
 public enum TokenType {
     NUMBER,

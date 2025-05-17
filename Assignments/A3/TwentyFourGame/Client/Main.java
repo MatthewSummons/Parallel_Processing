@@ -22,7 +22,7 @@ public final class Main {
         // Create and set up the window.
         JFrame frame = new JFrame("24 Games");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setMinimumSize(new Dimension(400, 200));
+        frame.setMinimumSize(new Dimension(850, 425));
         frame.setLocationRelativeTo(null);
 
         AppPanel panel = new AppPanel(frame, authHandler);   // Pass parent frame down to hide it later

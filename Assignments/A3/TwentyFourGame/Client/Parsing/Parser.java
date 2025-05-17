@@ -1,7 +1,8 @@
-package Parsing;
+package TwentyFourGame.Client.Parsing;
 
 import java.util.ArrayList;
-import Parsing.AST.*;
+
+import TwentyFourGame.Client.Parsing.AST.*;
 
 public class Parser {
     private ArrayList<Token> tokens;

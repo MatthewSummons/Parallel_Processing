@@ -1,6 +1,6 @@
-package Parsing.AST;
+package TwentyFourGame.Client.Parsing.AST;
 
-import Parsing.TokenType;
+import TwentyFourGame.Client.Parsing.TokenType;
 
 public class BinOp_Node extends AST_Node{
     public final AST_Node left;

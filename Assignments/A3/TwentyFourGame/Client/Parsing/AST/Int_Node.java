@@ -1,4 +1,4 @@
-package Parsing.AST;
+package TwentyFourGame.Client.Parsing.AST;
 
 public class Int_Node extends AST_Node{
     public final int value;

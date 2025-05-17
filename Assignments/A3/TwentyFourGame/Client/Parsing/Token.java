@@ -1,4 +1,4 @@
-package Parsing;
+package TwentyFourGame.Client.Parsing;
 
 final public class Token {
     private TokenType type;
