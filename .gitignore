@@ -5,6 +5,7 @@
 # Java Build Files/Drivers
 *.class
 *mysql*/
+*glassfish*/
 
 # Secrets
 *.pem
