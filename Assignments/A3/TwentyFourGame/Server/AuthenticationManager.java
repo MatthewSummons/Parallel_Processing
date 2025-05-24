@@ -16,6 +16,7 @@ import TwentyFourGame.Common.UserData;
 public class AuthenticationManager extends UnicastRemoteObject implements Authenticate {
     // Crashes if DB cannot be initialized, connected to etc.
     private DatabaseManager DB = new DatabaseManager();
+    private GameQueueListener gameQueueListener;
 
     public static void main(String[] args) {
         
@@ -31,6 +32,13 @@ public class AuthenticationManager extends UnicastRemoteObject implements Authen
 
     public AuthenticationManager() throws RemoteException {
         super();
+        try {
+            gameQueueListener = new GameQueueListener();
+            gameQueueListener.startListening();
+            System.out.println("JMS GameQueueListener started inside AuthenticationManager.");
+        } catch (Exception e) {
+            System.err.println("Failed to start JMS GameQueueListener: " + e);
+        }
     }
     
     @Override

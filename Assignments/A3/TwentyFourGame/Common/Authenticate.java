@@ -2,9 +2,7 @@ package TwentyFourGame.Common;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-
 import java.util.ArrayList;
-
 
 public interface Authenticate extends Remote {
     RegisterStatus register(String username, String passwordHash) throws RemoteException;

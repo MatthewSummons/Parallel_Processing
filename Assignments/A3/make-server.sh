@@ -3,11 +3,8 @@
 # Define the source directory
 SRC="TwentyFourGame/Server"
 
-### Export MySQL Plugin for JDBC
-# Relative path to JDBC Driver, comment this and uncomment line below if there are issues
-export CLASSPATH=$CLASSPATH:"$(dirname "$0")/mysql-connector-j-9.3.0/mysql-connector-j-9.3.0.jar"
-# Uncomment and add path manually here
-# export CLASSPATH=$CLASSPATH:"/path/to/mysql-connector-j-9.3.0.jar"
+### Export MySQL Plugin for JDBC & GlassFish Installation
+export CLASSPATH="$CLASSPATH:$(dirname "$0")/mysql-connector-j-9.3.0/mysql-connector-j-9.3.0.jar:$(dirname "$0")/glassfish5/glassfish/lib/gf-client.jar"
 
 # Set path to your specific Java 8 installation
 JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-1.8.jdk/Contents/Home/"
