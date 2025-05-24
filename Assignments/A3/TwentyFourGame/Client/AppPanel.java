@@ -21,7 +21,7 @@ public class AppPanel extends JPanel {
     private JFrame parentFrame;
     private Authenticate authHandler;
 
-    private String username;
+    private UserData userData;
 
     public AppPanel(JFrame parentFrame, Authenticate authHandler) {
         this.parentFrame = parentFrame;
@@ -34,8 +34,8 @@ public class AppPanel extends JPanel {
             @Override
             public void run() {
             try {
-                if (username != null) {
-                    authHandler.logout(username);
+                if (userData.username != null) {
+                    authHandler.logout(userData.username);
                 }
             } catch (RemoteException ex) {
                 System.err.println("Error logging out: " + ex);
@@ -90,8 +90,7 @@ public class AppPanel extends JPanel {
                     parentFrame, authHandler
                 ); registrationDialog.setVisible(true);
                 if (registrationDialog.isRegistered() && registrationDialog.isLoggedIn()) {
-                    UserData userData = registrationDialog.getUserData();
-                    username = userData.username; 
+                    userData = registrationDialog.getUserData();
                     showMainPanel(userData);
                 }
             }
@@ -110,8 +109,7 @@ public class AppPanel extends JPanel {
                 LoginManager loginManager = new LoginManager(parentFrame, usernameField, passwordField);
                 loginManager.attemptLogin(authHandler);
                 if (loginManager.isLoggedIn()) {
-                    UserData userData = loginManager.getUserData();
-                    username = userData.username;
+                    userData = loginManager.getUserData();
                     showMainPanel(userData);
                 }
             }
@@ -148,8 +146,8 @@ public class AppPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     // RMI Call to Server for Logout
                     try {
-                        assert (username != null);
-                        LogoutStatus result = authHandler.logout(username);
+                        assert (userData.username != null);
+                        LogoutStatus result = authHandler.logout(userData.username);
                         if (result == LogoutStatus.SERVER_ERROR) {
                             Notification.showError("Server error while logging out", parentFrame);
                         } // Successful Otherwise
@@ -288,11 +286,27 @@ public class AppPanel extends JPanel {
             this.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
+                    GameJoinRequestSender sender = new GameJoinRequestSender();
+                    sender.sendJoinRequest(userData);
                    
-                   // TODO: Business Logic here
-                    TransitionToGamePanel();
+                    AwaitGameStart();
+                    // TransitionToGamePanel();
                 }
             });
+        }
+
+        private void AwaitGameStart() {
+            // Replace this panel with waiting panel
+            WaitingButton.this.setText("Waiting for game...");
+            WaitingButton.this.setEnabled(false);
+            WaitingButton.this.setBackground(Color.LIGHT_GRAY);
+            WaitingButton.this.setForeground(Color.DARK_GRAY);
+
+            // Create a new waiting panel
+            JPanel waitingPanel = new JPanel();
+            waitingPanel.setLayout(new BorderLayout());
+            waitingPanel.add(new JLabel("Waiting for game..."), BorderLayout.CENTER);
+            WaitingButton.this.parent.setComponentAt(WaitingButton.this.parent.indexOfComponent(WaitingButton.this), waitingPanel);
         }
 
         private void TransitionToGamePanel() {
