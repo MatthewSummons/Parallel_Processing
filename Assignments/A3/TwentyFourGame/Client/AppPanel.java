@@ -23,19 +23,46 @@ public class AppPanel extends JPanel {
 
     private UserData userData;
 
+    private GameQueueSender GQSender;
+
     public AppPanel(JFrame parentFrame, Authenticate authHandler) {
         this.parentFrame = parentFrame;
         this.authHandler = authHandler;
         
-        showLoginPanel();
+        showLoadingPanel();
 
-        // Logout on kill signal
+        SwingWorker<Void, Void> initWorker = new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() {
+                try {
+                    GQSender = new GameQueueSender();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get(); // Throws if exception occurred
+                    showLoginPanel();
+                } catch (Exception e) {
+                    System.err.println("Error initializing GameQueueSender: " + e.getCause());
+                    Notification.showError("Game Player failed to load!", parentFrame);
+                }
+            }
+        }; initWorker.execute();
+
+        // Logout (and close JMS) on kill signal
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
             try {
                 if (userData.username != null) {
                     authHandler.logout(userData.username);
+                } if (GQSender != null) {
+                    GQSender.close();
                 }
             } catch (RemoteException ex) {
                 System.err.println("Error logging out: " + ex);
@@ -43,8 +70,21 @@ public class AppPanel extends JPanel {
             }
         });
     }
+
+    private void showLoadingPanel() {
+        this.setLayout(new GridBagLayout());
+        JLabel loadingLabel = new JLabel("Loading...", SwingConstants.CENTER);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.CENTER;
+        this.add(loadingLabel, gbc);
+        
+        this.repaint();
+        this.revalidate();
+    }
     
     public void showLoginPanel() {
+        this.removeAll();
+        
         GridBagConstraints gridConstraints = new GridBagConstraints();
         gridConstraints.insets = new Insets(10, 10, 10, 10);
         
@@ -115,6 +155,9 @@ public class AppPanel extends JPanel {
             }
             }
         ); this.add(loginButton, gridConstraints);
+
+        this.repaint();
+        this.revalidate();
     }
 
     private void showMainPanel(UserData userdata) {
@@ -283,53 +326,40 @@ public class AppPanel extends JPanel {
         public WaitingButton(JTabbedPane parent) {
             super("Play Game");
             this.parent = parent;
-            this.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    GameJoinRequestSender sender = new GameJoinRequestSender();
-                    sender.sendJoinRequest(userData);
-                   
-                    AwaitGameStart();
-                    // TransitionToGamePanel();
-                }
-            });
+            this.addActionListener(e -> AwaitGameStart());
         }
 
         private void AwaitGameStart() {
-            // Replace this panel with waiting panel
-            WaitingButton.this.setText("Waiting for game...");
-            WaitingButton.this.setEnabled(false);
-            WaitingButton.this.setBackground(Color.LIGHT_GRAY);
-            WaitingButton.this.setForeground(Color.DARK_GRAY);
+            this.setText("Joining Game...");
+            this.setEnabled(false);
+            
+            // Send JMS message to join game queue
+            SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    GQSender.sendUserData(userData);
+                    return null;
+                }
 
-            // Create a new waiting panel
-            JPanel waitingPanel = new JPanel();
-            waitingPanel.setLayout(new BorderLayout());
-            waitingPanel.add(new JLabel("Waiting for game..."), BorderLayout.CENTER);
-            WaitingButton.this.parent.setComponentAt(WaitingButton.this.parent.indexOfComponent(WaitingButton.this), waitingPanel);
+                @Override
+                protected void done() {
+                    try {
+                        get(); // Check for exceptions
+                        setText("Waiting for players...");
+                        TransitionToGamePanel();
+                    } catch (Exception ex) {
+                        setText("Play Game");
+                        setEnabled(true);
+                        Notification.showError("Failed to join game: " + ex.getMessage(), parentFrame);
+                    }
+                }
+            };
+            worker.execute();
         }
 
         private void TransitionToGamePanel() {
-            // Find the parent tabbed pane
-            Component component = WaitingButton.this.parent;
-            while (!(component instanceof JTabbedPane) && component != null) {
-                component = component.getParent();
-            }
-
-            if (component != null) {
-                // Replace this panel with game panel
-                JTabbedPane tabbedPane = (JTabbedPane) component;
-                int index = tabbedPane.indexOfComponent(WaitingButton.this);
-                // FIXME: Remove Boilerplate seeding{
-                String[] cards = {"A♠", "K♣", "2♦", "3♥"};
-                String[][] players = {
-                    { "Kevin", "Win: 0/0 avg: 0.0s" },
-                    { "Kevin2", "Win: 0/0 avg: 0.0s" },
-                    { "Kevin3", "Win: 0/0 avg: 0.0s" },
-                    { "Kevin4", "Win: 0/0 avg: 0.0s" }
-                };
-                tabbedPane.setComponentAt(index, new GamePanel(cards, players));
-            }
+            this.setText("...");
+            // TODO: Implement game panel transition
         }
     }
 
