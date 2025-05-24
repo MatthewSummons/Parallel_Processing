@@ -7,9 +7,9 @@ import java.rmi.RemoteException;
 
 import java.util.Arrays;
 
-import TwentyFourGame.Server.Authenticate;
-import TwentyFourGame.Server.RegisterStatus;
-import TwentyFourGame.Server.UserData;
+import TwentyFourGame.Common.Authenticate;
+import TwentyFourGame.Common.RegisterStatus;
+import TwentyFourGame.Common.UserData;
 import TwentyFourGame.Server.HashUtil;
 
 

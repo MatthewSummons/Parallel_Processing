@@ -6,7 +6,7 @@ import java.rmi.registry.Registry;
 
 import javax.swing.*;
 
-import TwentyFourGame.Server.Authenticate;
+import TwentyFourGame.Common.Authenticate;
 
 // TODO: Add Icon on application window and app-icon
 public final class Main {    

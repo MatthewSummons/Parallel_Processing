@@ -7,12 +7,12 @@ import java.rmi.RemoteException;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
+import TwentyFourGame.Common.Authenticate;
+import TwentyFourGame.Common.LogoutStatus;
+import TwentyFourGame.Common.UserData;
+
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import TwentyFourGame.Server.Authenticate;
-import TwentyFourGame.Server.LogoutStatus;
-import TwentyFourGame.Server.UserData;
 
 
 

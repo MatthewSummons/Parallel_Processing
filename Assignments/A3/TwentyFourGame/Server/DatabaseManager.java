@@ -9,6 +9,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import TwentyFourGame.Common.LoginStatus;
+import TwentyFourGame.Common.LogoutStatus;
+import TwentyFourGame.Common.RegisterStatus;
+import TwentyFourGame.Common.UserData;
+
 public class DatabaseManager {
 
     // TODO: Get from .env files later

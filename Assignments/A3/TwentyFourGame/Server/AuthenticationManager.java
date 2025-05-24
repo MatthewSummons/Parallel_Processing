@@ -6,6 +6,12 @@ import java.rmi.server.UnicastRemoteObject;
 
 import java.util.ArrayList;
 
+import TwentyFourGame.Common.Authenticate;
+import TwentyFourGame.Common.LoginStatus;
+import TwentyFourGame.Common.LogoutStatus;
+import TwentyFourGame.Common.RegisterStatus;
+import TwentyFourGame.Common.UserData;
+
 
 public class AuthenticationManager extends UnicastRemoteObject implements Authenticate {
     // Crashes if DB cannot be initialized, connected to etc.

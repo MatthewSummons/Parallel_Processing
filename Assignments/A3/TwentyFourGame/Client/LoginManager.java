@@ -1,6 +1,10 @@
 package TwentyFourGame.Client;
 
+import TwentyFourGame.Common.Authenticate;
+import TwentyFourGame.Common.LoginStatus;
+import TwentyFourGame.Common.UserData;
 import TwentyFourGame.Server.*;
+
 import java.util.Arrays;
 import javax.swing.*;
 import java.rmi.RemoteException;

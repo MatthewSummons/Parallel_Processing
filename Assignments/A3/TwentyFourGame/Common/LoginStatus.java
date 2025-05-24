@@ -1,4 +1,4 @@
-package TwentyFourGame.Server;
+package TwentyFourGame.Common;
 
 public enum LoginStatus {
     SUCCESS,

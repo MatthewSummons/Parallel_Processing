@@ -1,4 +1,4 @@
-package TwentyFourGame.Server;
+package TwentyFourGame.Common;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
