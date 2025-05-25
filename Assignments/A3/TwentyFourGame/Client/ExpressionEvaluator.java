@@ -6,18 +6,23 @@ import java.awt.event.ActionListener;
 
 import java.util.ArrayList;
 import TwentyFourGame.Client.Parsing.Interpreter;
+import TwentyFourGame.Common.GameOverMessage;
 
 public class ExpressionEvaluator implements ActionListener {
             
+    private final String username;
     private JTextField expressionField;
     private JLabel resultLabel;
     private ArrayList<Integer> allowed;
+    private final GameQueueSender sender;
 
     public ExpressionEvaluator(
-        JTextField expressionField, JLabel resultLabel, String[] allowed
+        String username, JTextField expressionField, JLabel resultLabel, String[] allowed, GameQueueSender sender
     ) {
+        this.username = username;
         this.expressionField = expressionField;
         this.resultLabel = resultLabel;
+        this.sender = sender;
         this.allowed = new ArrayList<>();
         for (String card : allowed) {
             switch(card.charAt(0)) {
@@ -35,10 +40,27 @@ public class ExpressionEvaluator implements ActionListener {
         String expression = expressionField.getText();
         if (Interpreter.checkTwentyFour(expression, allowed)) {
             resultLabel.setText(" = 24");
+            // Send JMS message to join game queue
+            SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    sender.sendGameOverMessage(new GameOverMessage(username, expression));
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get(); // Check for exceptions
+                    } catch (Exception ex) {
+                        System.err.println("Failed to send game over message: " + ex.getMessage());
+                        // Notification.showError("Failed to communicate with server " + ex.getMessage(), parentFrame);
+                    }
+                }
+            }; worker.execute();
         } else {
             resultLabel.setText(" != 24");
         } 
-        // expressionField.setText(""); // Clear the field after submission
     }
 
 }

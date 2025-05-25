@@ -5,6 +5,11 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
 import java.util.ArrayList;
+import java.util.Queue;
+
+import javax.jms.*;
+import javax.naming.Context;
+import javax.naming.InitialContext;
 
 import TwentyFourGame.Common.Authenticate;
 import TwentyFourGame.Common.LoginStatus;
@@ -17,6 +22,8 @@ public class AuthenticationManager extends UnicastRemoteObject implements Authen
     // Crashes if DB cannot be initialized, connected to etc.
     private DatabaseManager DB = new DatabaseManager();
     private GameQueueListener gameQueueListener;
+    private GamePublisher gamePublisher;
+
 
     public static void main(String[] args) {
         
@@ -34,12 +41,15 @@ public class AuthenticationManager extends UnicastRemoteObject implements Authen
         super();
         try {
             gameQueueListener = new GameQueueListener();
+            gamePublisher = new GamePublisher(gameQueueListener.session);
+            gameQueueListener.setGamePublisher(gamePublisher);
             gameQueueListener.startListening();
             System.out.println("JMS GameQueueListener started inside AuthenticationManager.");
         } catch (Exception e) {
             System.err.println("Failed to start JMS GameQueueListener: " + e);
         }
     }
+
     
     @Override
     public RegisterStatus register(String username, String passwordHash) throws RemoteException {

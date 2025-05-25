@@ -65,7 +65,7 @@ public class Interpreter {
         ArrayList<Integer> result = validate(allowed, ast);
         if (result.isEmpty()) {
             double evaluationResult = evaluate(ast);
-            return evaluationResult == 24;
+            return (Math.abs(evaluationResult - 24) < 1e-6);
         } else {
             return false;
         }

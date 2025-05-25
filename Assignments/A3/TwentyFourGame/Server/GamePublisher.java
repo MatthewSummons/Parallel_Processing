@@ -5,6 +5,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 
 import TwentyFourGame.Common.GameStartMessage;
+import TwentyFourGame.Common.GameOverMessage;
 
 public class GamePublisher {
     private final Session session;
@@ -18,6 +19,11 @@ public class GamePublisher {
     }
 
     public void publishGameStart(GameStartMessage msg) throws JMSException {
+        ObjectMessage objMsg = session.createObjectMessage(msg);
+        producer.send(objMsg);
+    }
+
+    public void publishGameOver(GameOverMessage msg) throws JMSException {
         ObjectMessage objMsg = session.createObjectMessage(msg);
         producer.send(objMsg);
     }

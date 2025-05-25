@@ -3,6 +3,8 @@ package TwentyFourGame.Client;
 import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+
+import TwentyFourGame.Common.GameOverMessage;
 import TwentyFourGame.Common.GameStartMessage;
 
 public class GameTopicListener implements Runnable {
@@ -31,9 +33,12 @@ public class GameTopicListener implements Runnable {
                     try {
                         if (message instanceof ObjectMessage) {
                             Object obj = ((ObjectMessage) message).getObject();
-                            if (obj instanceof GameStartMessage) {
+                            if (obj instanceof GameStartMessage) {        // Game Start
                                 GameStartMessage startMsg = (GameStartMessage) obj;
                                 javax.swing.SwingUtilities.invokeLater(() -> appPanel.showGamePanel(startMsg));
+                            } else if (obj instanceof GameOverMessage) {  // Game End
+                                GameOverMessage overMsg = (GameOverMessage) obj;
+                                javax.swing.SwingUtilities.invokeLater(() -> appPanel.showGameOverPanel(overMsg));
                             }
                         }
                     } catch (Exception e) {

@@ -5,6 +5,7 @@ import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
+import TwentyFourGame.Common.GameOverMessage;
 import TwentyFourGame.Common.UserData;
 
 public class GameQueueSender {
@@ -34,6 +35,11 @@ public class GameQueueSender {
 
     public void sendUserData(UserData userData) throws Exception {
         ObjectMessage objMessage = session.createObjectMessage(userData);
+        this.producer.send(objMessage);
+    }
+
+    public void sendGameOverMessage(GameOverMessage msg) throws Exception {
+        ObjectMessage objMessage = session.createObjectMessage(msg);
         this.producer.send(objMessage);
     }
 
