@@ -40,7 +40,7 @@ public class AuthenticationManager extends UnicastRemoteObject implements Authen
     public AuthenticationManager() throws RemoteException {
         super();
         try {
-            gameQueueListener = new GameQueueListener();
+            gameQueueListener = new GameQueueListener(DB);
             gamePublisher = new GamePublisher(gameQueueListener.session);
             gameQueueListener.setGamePublisher(gamePublisher);
             gameQueueListener.startListening();

@@ -240,7 +240,7 @@ public class DatabaseManager {
         } finally { OnlineUserLock.writeLock().unlock(); }
     }
 
-    private void updateUserTable(
+    public void updateUserTable(
         String username, int wins, int games, double avgWinTime
     ) {
         try {
