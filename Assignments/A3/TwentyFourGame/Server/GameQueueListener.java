@@ -3,10 +3,12 @@ package TwentyFourGame.Server;
 import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+
+import TwentyFourGame.Common.GameStartMessage;
 import TwentyFourGame.Common.UserData;
+import TwentyFourGame.Server.GamePublisher;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -17,11 +19,13 @@ public class GameQueueListener implements MessageListener {
     private Session session;
 
     // Game join logic state
-    private final List<UserData> waitingPlayers = new ArrayList<>();
+    private final ArrayList<UserData> waitingPlayers = new ArrayList<>();
     private long firstJoinTime = 0;
     private Timer joinTimer = null;
     private boolean timerFired = false;
     private final Object lock = new Object();
+
+    private GamePublisher gamePublisher;
 
     public void startListening() throws Exception {
         System.setProperty("org.omg.CORBA.ORBInitialHost", "localhost");
@@ -35,12 +39,13 @@ public class GameQueueListener implements MessageListener {
 
         connection = connectionFactory.createConnection();
         session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        gamePublisher = new GamePublisher(session);
         MessageConsumer consumer = session.createConsumer(queue);
 
         consumer.setMessageListener(this);
         connection.start();
 
-        System.out.println("Game Queue Listener is now listening for messages...");
+        System.out.println("Game Queue & Game Publisher is live ...");
     }
 
     @Override
@@ -101,7 +106,18 @@ public class GameQueueListener implements MessageListener {
         for (UserData user : waitingPlayers) {
             System.out.println("  - " + user.username);
         }
-        // TODO: Inform clients via topic, start game logic, etc.
+        GameStartMessage startMsg = new GameStartMessage();
+        startMsg.cards = generateRandomCards(); // Implement this utility
+        startMsg.players = new ArrayList<>(waitingPlayers);
+        startMsg.gameId = java.util.UUID.randomUUID().toString();
+        startMsg.startTime = System.currentTimeMillis();
+
+        try {
+            gamePublisher.publishGameStart(startMsg);
+            System.out.println("GameStartMessage published to topic.");
+        } catch (JMSException e) {
+            System.err.println("Failed to publish GameStartMessage: " + e);
+        }
 
         // Reset state
         waitingPlayers.clear();
@@ -121,5 +137,20 @@ public class GameQueueListener implements MessageListener {
         } catch (Exception e) {
             System.err.println("Error closing JMS resources: " + e);
         }
+    }
+
+    private ArrayList<String> generateRandomCards() {
+        // Returns a list of strings representing random cards where the suits are utf emojis
+        ArrayList<String> cards = new ArrayList<>();
+        String[] suits = {"♠", "♥", "♦", "♣"};
+        String[] ranks = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
+        
+        for (int i = 0; i < 4; i++) {
+            String suit = suits[(int) (Math.random() * suits.length)];
+            String rank = ranks[(int) (Math.random() * ranks.length)];
+            cards.add(rank + suit);
+        }
+        
+        return cards;
     }
 }

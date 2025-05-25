@@ -10,9 +10,9 @@ import javax.swing.table.DefaultTableModel;
 import TwentyFourGame.Common.Authenticate;
 import TwentyFourGame.Common.LogoutStatus;
 import TwentyFourGame.Common.UserData;
+import TwentyFourGame.Common.GameStartMessage;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 
 
@@ -20,10 +20,9 @@ public class AppPanel extends JPanel {
 
     private JFrame parentFrame;
     private Authenticate authHandler;
-
     private UserData userData;
-
     private GameQueueSender GQSender;
+    private boolean inGame = false;
 
     public AppPanel(JFrame parentFrame, Authenticate authHandler) {
         this.parentFrame = parentFrame;
@@ -36,6 +35,7 @@ public class AppPanel extends JPanel {
             protected Void doInBackground() {
                 try {
                     GQSender = new GameQueueSender();
+                    new Thread(new GameTopicListener(AppPanel.this)).start();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -330,6 +330,8 @@ public class AppPanel extends JPanel {
         }
 
         private void AwaitGameStart() {
+            inGame = true;
+            
             this.setText("Joining Game...");
             this.setEnabled(false);
             
@@ -346,7 +348,6 @@ public class AppPanel extends JPanel {
                     try {
                         get(); // Check for exceptions
                         setText("Waiting for players...");
-                        TransitionToGamePanel();
                     } catch (Exception ex) {
                         setText("Play Game");
                         setEnabled(true);
@@ -356,11 +357,28 @@ public class AppPanel extends JPanel {
             };
             worker.execute();
         }
+    }
 
-        private void TransitionToGamePanel() {
-            this.setText("...");
-            // TODO: Implement game panel transition
+    public void showGamePanel(GameStartMessage startMsg) {
+        if (!inGame) {
+            return;
         }
+
+        this.removeAll();
+        
+        // Extract cards and players from the GameStartMessage
+        String[] cards = startMsg.cards.toArray(new String[0]);
+        String[][] players = startMsg.getPlayerData();
+
+        // Create the game panel with cards and players
+        GamePanel gamePanel = new GamePanel(cards, players);
+        
+        // Add the game panel to the main panel
+        this.setLayout(new BorderLayout());
+        this.add(gamePanel, BorderLayout.CENTER);
+
+        this.repaint();
+        this.revalidate();
     }
 
     private class GamePanel extends JPanel {
@@ -392,14 +410,19 @@ public class AppPanel extends JPanel {
 
                 JLabel nameLabel = new JLabel(player[0]);
                 nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                nameLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+                nameLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 2, 0));
 
-                JLabel statsLabel = new JLabel(player[1]);
-                statsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                statsLabel.setBorder(BorderFactory.createEmptyBorder(2, 0, 5, 0));
+                JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+                statsPanel.setOpaque(false);
+                
+                JLabel winsLabel = new JLabel(player[1]);
+                JLabel avgTimeLabel = new JLabel(player[2]);
+                
+                statsPanel.add(winsLabel);
+                statsPanel.add(avgTimeLabel);
 
                 playerBox.add(nameLabel);
-                playerBox.add(statsLabel);
+                playerBox.add(statsPanel);
 
                 playersPanel.add(playerBox);
                 playersPanel.add(Box.createRigidArea(new Dimension(0, 10)));
@@ -440,7 +463,6 @@ public class AppPanel extends JPanel {
             cardPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
             // Parse card value
-            // String rank = cardValue.substring(0, cardValue.length() - 1);
             String suit = cardValue.substring(cardValue.length() - 1);
 
             // Determine color based on suit
@@ -469,8 +491,6 @@ public class AppPanel extends JPanel {
             fixedSizeContainer.add(cardOuter);
             
             return fixedSizeContainer;
-        }
-
-        
+        }  
     }
 }
