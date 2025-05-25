@@ -59,14 +59,17 @@ public class Interpreter {
         AST_Node ast = parser.parse(input);
 
         if (ast == null) {
+            System.err.println("Invalid expression: " + input);
             return false; // Invalid expression
         }
 
         ArrayList<Integer> result = validate(allowed, ast);
         if (result.isEmpty()) {
             double evaluationResult = evaluate(ast);
+            System.out.println("Evaluation Result: " + evaluationResult);
             return (Math.abs(evaluationResult - 24) < 1e-6);
         } else {
+            System.err.println("Unused or invalid values: " + result);
             return false;
         }
     }

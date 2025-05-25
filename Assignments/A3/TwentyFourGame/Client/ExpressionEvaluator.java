@@ -26,13 +26,20 @@ public class ExpressionEvaluator implements ActionListener {
         this.allowed = new ArrayList<>();
         for (String card : allowed) {
             switch(card.charAt(0)) {
-                case 'A': this.allowed.add(1); break;
+                case 'A': this.allowed.add(1);  break;
                 case 'J': this.allowed.add(11); break;
                 case 'Q': this.allowed.add(12); break;
                 case 'K': this.allowed.add(13); break;
+                case '1': if (card.charAt(1) == '0') {this.allowed.add(10); break;} // Handle 10 as a special case 
                 default:  this.allowed.add(Integer.parseInt(card.substring(0, 1))); break;
             }
         }
+
+        // Print the allowed cards for debugging
+        System.out.println("Allowed cards: ");
+        for (Integer card : this.allowed) {
+            System.out.print(card + " ");
+        } System.out.println();
     }
     
     @Override

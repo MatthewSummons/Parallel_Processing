@@ -22,6 +22,7 @@ public class GameQueueListener implements MessageListener {
 
     // Game join logic state
     private final ArrayList<UserData> waitingPlayers = new ArrayList<>();
+    private ArrayList<UserData> inGamePlayers = new ArrayList<>();
     private long firstJoinTime = 0;
     private boolean inGame = false;
     private Timer joinTimer = null;
@@ -135,10 +136,11 @@ public class GameQueueListener implements MessageListener {
         }
         
         GameStartMessage startMsg = new GameStartMessage();
-        startMsg.cards = generateRandomCards(); // Implement this utility
+        startMsg.cards = generateRandomCards();
         startMsg.players = new ArrayList<>(waitingPlayers);
-        startMsg.gameId = java.util.UUID.randomUUID().toString();
         startMsg.startTime = System.currentTimeMillis();
+
+        inGamePlayers = new ArrayList<>(waitingPlayers);
 
         try {
             gamePublisher.publishGameStart(startMsg);
@@ -146,6 +148,15 @@ public class GameQueueListener implements MessageListener {
             System.out.println("GameStartMessage published to topic.");
         } catch (JMSException e) {
             System.err.println("Failed to publish GameStartMessage: " + e);
+        }
+
+        // Reset state
+        waitingPlayers.clear();
+        firstJoinTime = 0;
+        timerFired = false;
+        if (joinTimer != null) {
+            joinTimer.cancel();
+            joinTimer = null;
         }
     }
     
@@ -158,7 +169,7 @@ public class GameQueueListener implements MessageListener {
         try {
             long duration = System.currentTimeMillis() - gameStartTime;
             System.out.println("Game over! Winner: " + msg.winnerUsername + ", Duration: " + duration + "ms");
-            for (UserData player : waitingPlayers) {
+            for (UserData player : inGamePlayers) {
                 UserData dbUser = DB.readUserInfo(player.username);
                 int newGames = dbUser.games + 1;
                 int newWins = dbUser.wins;
@@ -166,8 +177,8 @@ public class GameQueueListener implements MessageListener {
 
                 if (player.username.equals(msg.winnerUsername)) {
                     newWins += 1;
-                    // Recalculate average win time
-                    newAvgWinTime = ((dbUser.avgWinTime * dbUser.wins) + (duration / 1000.0)) / newWins;
+                    // Recalculate average win time (~2dp)
+                    newAvgWinTime = Math.round(((dbUser.avgWinTime * dbUser.wins) + (duration / 1000.0)) / newWins * 100.0) / 100.0;
                 }
 
                 DB.updateUserTable(player.username, newWins, newGames, newAvgWinTime);
@@ -177,15 +188,8 @@ public class GameQueueListener implements MessageListener {
         } catch (JMSException e) {
             System.err.println("Failed to publish GameOverMessage: " + e);
         } finally {
-            // Reset state
-            waitingPlayers.clear();
             inGame = false;
-            firstJoinTime = 0;
-            timerFired = false;
-            if (joinTimer != null) {
-                joinTimer.cancel();
-                joinTimer = null;
-            }
+            inGamePlayers.clear();
         }
     }
     

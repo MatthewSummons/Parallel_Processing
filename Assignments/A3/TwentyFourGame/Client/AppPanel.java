@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 import TwentyFourGame.Common.Authenticate;
+import TwentyFourGame.Common.GameOverMessage;
 import TwentyFourGame.Common.LogoutStatus;
 import TwentyFourGame.Common.UserData;
 import TwentyFourGame.Common.GameStartMessage;
@@ -20,9 +21,14 @@ public class AppPanel extends JPanel {
 
     private JFrame parentFrame;
     private Authenticate authHandler;
+    
     private UserData userData;
     private GameQueueSender GQSender;
     private boolean inGame = false;
+    private JButton gameButton;
+
+    private String lastWinner = null;
+    private String lastWinningExpression = null;
 
     public AppPanel(JFrame parentFrame, Authenticate authHandler) {
         this.parentFrame = parentFrame;
@@ -130,8 +136,8 @@ public class AppPanel extends JPanel {
                     parentFrame, authHandler
                 ); registrationDialog.setVisible(true);
                 if (registrationDialog.isRegistered() && registrationDialog.isLoggedIn()) {
-                    userData = registrationDialog.getUserData();
-                    showMainPanel(userData);
+                    AppPanel.this.userData = registrationDialog.getUserData();
+                    showMainPanel(false);
                 }
             }
             }
@@ -149,8 +155,8 @@ public class AppPanel extends JPanel {
                 LoginManager loginManager = new LoginManager(parentFrame, usernameField, passwordField);
                 loginManager.attemptLogin(authHandler);
                 if (loginManager.isLoggedIn()) {
-                    userData = loginManager.getUserData();
-                    showMainPanel(userData);
+                    AppPanel.this.userData = loginManager.getUserData();
+                    showMainPanel(false);
                 }
             }
             }
@@ -160,7 +166,7 @@ public class AppPanel extends JPanel {
         this.revalidate();
     }
 
-    private void showMainPanel(UserData userdata) {
+    private void showMainPanel(boolean afterGame) {
         // Remove all existing components
         this.removeAll();
 
@@ -168,18 +174,16 @@ public class AppPanel extends JPanel {
         JTabbedPane tabbedPane = new JTabbedPane();
 
         // User Profile tab
-        JPanel userProfilePanel = new UserPanel(userdata);
-
+        JPanel userProfilePanel = new UserPanel(userData);
         tabbedPane.addTab("User Profile", userProfilePanel);
 
         // Play Game tab
-        JButton playGamePanel = new WaitingButton(tabbedPane);
+        JPanel playGamePanel = new PlayGamePanel();
         tabbedPane.addTab("Play Game", playGamePanel);
 
         // Leader Board tab
         JPanel leaderBoardPanel = new LeaderboardPanel();
         tabbedPane.addTab("Leader Board", leaderBoardPanel);
-
 
         // Logout tab
         JButton logoutBtn = new JButton("Logout");
@@ -193,7 +197,7 @@ public class AppPanel extends JPanel {
                         LogoutStatus result = authHandler.logout(userData.username);
                         if (result == LogoutStatus.SERVER_ERROR) {
                             Notification.showError("Server error while logging out", parentFrame);
-                        } // Successful Otherwise
+                        }
                     } catch (RemoteException ex) {
                         Notification.showError("Unable to logout properly", null);
                         System.err.println("Error: " + ex);
@@ -206,8 +210,14 @@ public class AppPanel extends JPanel {
                 }
             }
         );
-
         tabbedPane.addTab("Logout", logoutBtn);
+
+        // Set the selected tab based on afterGame
+        if (afterGame) {
+            tabbedPane.setSelectedIndex(1); // Play Game tab
+        } else {
+            tabbedPane.setSelectedIndex(0); // User Profile tab
+        }
 
         // Add the tabbed pane to the main panel
         this.setLayout(new BorderLayout());
@@ -215,10 +225,10 @@ public class AppPanel extends JPanel {
 
         this.repaint();
         this.revalidate();
-        // When coming from registration, unhide the parent frame
         parentFrame.setVisible(true);
     }
 
+    
     private class UserPanel extends JPanel {
         
         public UserPanel(UserData userdata) {
@@ -304,6 +314,10 @@ public class AppPanel extends JPanel {
                     tableModel.addRow(
                         new Object[]{ row.rank, row.username, row.wins, row.games, row.avgWinTime }
                     );
+                    // Update current user's data if this row matches their username
+                    if (row.username.equals(userData.username)) {
+                        userData = row;
+                    }
                 }
             } catch (RemoteException e) {
                 System.err.println("Error retrieving leaderboard data: " + e);
@@ -321,43 +335,6 @@ public class AppPanel extends JPanel {
         }
     }
 
-    private class WaitingButton extends JButton {
-        public JTabbedPane parent;
-        public WaitingButton(JTabbedPane parent) {
-            super("Play Game");
-            this.parent = parent;
-            this.addActionListener(e -> AwaitGameStart());
-        }
-
-        private void AwaitGameStart() {
-            inGame = true;
-            
-            this.setText("Joining Game...");
-            this.setEnabled(false);
-            
-            // Send JMS message to join game queue
-            SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-                @Override
-                protected Void doInBackground() throws Exception {
-                    GQSender.sendUserData(userData);
-                    return null;
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        get(); // Check for exceptions
-                        setText("Waiting for players...");
-                    } catch (Exception ex) {
-                        setText("Play Game");
-                        setEnabled(true);
-                        Notification.showError("Failed to join game: " + ex.getMessage(), parentFrame);
-                    }
-                }
-            };
-            worker.execute();
-        }
-    }
 
     public void showGamePanel(GameStartMessage startMsg) {
         if (!inGame) {
@@ -381,6 +358,13 @@ public class AppPanel extends JPanel {
         this.revalidate();
     }
 
+    public void showGameOverPanel(GameOverMessage overMsg) {
+        inGame = false;
+        lastWinner = overMsg.winnerUsername;
+        lastWinningExpression = overMsg.winningExpression;
+        showMainPanel(true);
+    }
+ 
     private class GamePanel extends JPanel {
         public GamePanel(String[] cards, String[][] players) {
             setLayout(new BorderLayout(10, 10));
@@ -439,11 +423,13 @@ public class AppPanel extends JPanel {
             expressionPanel.add(resultLabel, BorderLayout.EAST);
             
             JTextField expressionField = new JTextField();
-            expressionField.addActionListener(new ExpressionEvaluator(expressionField, resultLabel, cards));    
+            expressionField.addActionListener(new ExpressionEvaluator(
+                userData.username, expressionField, resultLabel, cards, GQSender
+            ));    
             expressionPanel.add(expressionField, BorderLayout.CENTER);
             add(expressionPanel, BorderLayout.SOUTH);
         }
-
+        
         private JPanel createPlayingCard(String cardValue) {
             // Define fixed card dimensions
             final int cardWidth = 120;
@@ -492,5 +478,56 @@ public class AppPanel extends JPanel {
             
             return fixedSizeContainer;
         }  
+    }
+
+    private class PlayGamePanel extends JPanel {
+        public PlayGamePanel() {
+            setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+            setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+
+            if (lastWinner != null && lastWinningExpression != null) {
+                JLabel winnerLabel = new JLabel("Winner: " + lastWinner, SwingConstants.CENTER);
+                winnerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                JLabel exprLabel = new JLabel("Expression: " + lastWinningExpression, SwingConstants.CENTER);
+                exprLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                add(winnerLabel);
+                add(Box.createRigidArea(new Dimension(0, 10)));
+                add(exprLabel);
+                add(Box.createRigidArea(new Dimension(0, 30)));
+            }
+
+            JButton startBtn = new JButton("Start New Game");
+            startBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+            startBtn.addActionListener(e -> {
+                inGame = true;
+                lastWinner = null;
+                lastWinningExpression = null;
+                ((JButton)e.getSource()).setText("Joining Game...");
+                ((JButton)e.getSource()).setEnabled(false);
+                // Send JMS message to join game queue
+                SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+                    @Override
+                    protected Void doInBackground() throws Exception {
+                        GQSender.sendUserData(userData);
+                        return null;
+                    }
+                    @Override
+                    protected void done() {
+                        try {
+                            get();
+                            ((JButton)e.getSource()).setText("Waiting for players...");
+                        } catch (Exception ex) {
+                            ((JButton)e.getSource()).setText("Start New Game");
+                            ((JButton)e.getSource()).setEnabled(true);
+                            Notification.showError("Failed to join game: " + ex.getMessage(), parentFrame);
+                        }
+                    }
+                };
+                worker.execute();
+            });
+            add(startBtn);
+        }
     }
 }
