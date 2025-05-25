@@ -16,9 +16,9 @@ import java.util.TimerTask;
 
 public class GameQueueListener implements MessageListener {
 
-    private Connection connection;
-    public Session session;
-    private Queue queue;
+    private final Connection connection;
+    public final Session session;
+    private final Queue queue;
 
     // Game join logic state
     private final ArrayList<UserData> waitingPlayers = new ArrayList<>();
@@ -30,8 +30,11 @@ public class GameQueueListener implements MessageListener {
     private final Object lock = new Object();
 
     private GamePublisher gamePublisher;
+    private final DatabaseManager DB;
 
-    public GameQueueListener() throws Exception{
+    public GameQueueListener(DatabaseManager db) throws Exception{
+        DB = db;
+        
         System.setProperty("org.omg.CORBA.ORBInitialHost", "localhost");
         System.setProperty("org.omg.CORBA.ORBInitialPort", "3700");
 
@@ -82,6 +85,11 @@ public class GameQueueListener implements MessageListener {
     }
     
     private void handleUserJoin(UserData userData) {
+        if (inGame) {
+            System.out.println("Received UserData but already in game, ignoring: " + userData.username);
+            return; // Ignore if already in game
+        }
+        
         synchronized (lock) {
             waitingPlayers.add(userData);
 
@@ -139,30 +147,45 @@ public class GameQueueListener implements MessageListener {
         } catch (JMSException e) {
             System.err.println("Failed to publish GameStartMessage: " + e);
         }
-
-        // Reset state (Still in game until game over)
-        waitingPlayers.clear();
-        firstJoinTime = 0;
-        timerFired = false;
-        if (joinTimer != null) {
-            joinTimer.cancel();
-            joinTimer = null;
-        }
     }
     
     private void handleGameOver(GameOverMessage msg) {
         if (!inGame) {
             System.out.println("Received GameOverMessage but no game is currently active.");
             return;
-        } inGame = false; // Reset game state
+        }
 
         try {
             long duration = System.currentTimeMillis() - gameStartTime;
             System.out.println("Game over! Winner: " + msg.winnerUsername + ", Duration: " + duration + "ms");
+            for (UserData player : waitingPlayers) {
+                UserData dbUser = DB.readUserInfo(player.username);
+                int newGames = dbUser.games + 1;
+                int newWins = dbUser.wins;
+                double newAvgWinTime = dbUser.avgWinTime;
+
+                if (player.username.equals(msg.winnerUsername)) {
+                    newWins += 1;
+                    // Recalculate average win time
+                    newAvgWinTime = ((dbUser.avgWinTime * dbUser.wins) + (duration / 1000.0)) / newWins;
+                }
+
+                DB.updateUserTable(player.username, newWins, newGames, newAvgWinTime);
+            }
             gamePublisher.publishGameOver(msg);
             System.out.println("GameOverMessage published to topic.");
         } catch (JMSException e) {
             System.err.println("Failed to publish GameOverMessage: " + e);
+        } finally {
+            // Reset state
+            waitingPlayers.clear();
+            inGame = false;
+            firstJoinTime = 0;
+            timerFired = false;
+            if (joinTimer != null) {
+                joinTimer.cancel();
+                joinTimer = null;
+            }
         }
     }
     
@@ -182,12 +205,15 @@ public class GameQueueListener implements MessageListener {
         String[] suits = {"♠", "♥", "♦", "♣"};
         String[] ranks = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
         
-        java.util.Set<String> uniqueCards = new java.util.HashSet<>();
-        while (uniqueCards.size() < 4) {
-            String suit = suits[(int) (Math.random() * suits.length)];
+        java.util.Set<String> usedRanks = new java.util.HashSet<>();
+        while (cards.size() < 4) {
             String rank = ranks[(int) (Math.random() * ranks.length)];
-            uniqueCards.add(rank + suit);
-        } cards.addAll(uniqueCards);
+            if (!usedRanks.contains(rank)) {
+                String suit = suits[(int) (Math.random() * suits.length)];
+                cards.add(rank + suit);
+                usedRanks.add(rank);
+            }
+        }
         
         return cards;
     }
