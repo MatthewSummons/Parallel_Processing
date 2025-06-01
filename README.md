@@ -14,7 +14,7 @@ The application also makes use of JMS queues and topics to handle communication 
 Details of the JMS implementation can be found in the `report.pdf` file, alongside the demo for the application and the build process for the application (on UNIX like systems).
 
 <div align="center">
-    <img src="card_game/demo.png" alt="Card Game Demo"/>
+    <img src="Card_Game/demo.png" alt="Card Game Demo"/>
 </div>
 
 ## Image Resizer [img_resizer]
